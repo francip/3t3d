@@ -28,12 +28,19 @@ scene.add(axisHelper);
 // Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.dampingFactor = 0.1; // Smoother transitions
+controls.minDistance = 8; // Prevent zooming in too close
+controls.maxDistance = 25; // Prevent zooming out too far
 
 // Lighting
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 const pointLight = new THREE.PointLight(0xffffff, 1);
-pointLight.position.set(5, 5, 5);
-scene.add(ambientLight, pointLight);
+// Position light to match our new camera angle for better shadows
+pointLight.position.set(6, 8, 7);
+// Add subtle directional light to enhance isometric feel
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+directionalLight.position.set(-5, 3, -2);
+scene.add(ambientLight, pointLight, directionalLight);
 
 // Game Configuration
 const config = {
@@ -48,8 +55,10 @@ const game = new TicTacToe(config.width, config.height, config.depth, config.win
 const board = new Board(config.width, config.height, config.depth);
 scene.add(board.getObject());
 
-// Set camera position
-camera.position.z = 10;
+// Set camera position for subtle isometric view
+// Position at 30° instead of 45° for a more direct but still angled view
+camera.position.set(6, 5, 8); // (x, y, z) where x is 30° to left, y is 30° down
+camera.lookAt(0, 0, 0); // Look at center of the scene
 
 // Create style selector UI
 function createStyleSelector() {

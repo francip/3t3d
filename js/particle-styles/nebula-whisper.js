@@ -93,15 +93,16 @@ export function createNebulaWhisperParticleSystem(type, position) {
                 
                 // More pronounced type-specific effects
                 ${type === 'X' ? 
-                    // X pattern - dramatic diagonal motion
-                    'float xFactor = 0.4 + 0.2 * sin(time); pos.xy = mix(pos.xy, vec2(sign(pos.x) * 0.35 * cos(time * 0.3), sign(pos.y) * 0.35 * sin(time * 0.3)), xFactor); pos.z *= 0.8 + 0.3 * sin(time * 0.5);' : 
-                    // O pattern - more elaborate spiral with pulsing
-                    'float angle = atan(pos.y, pos.x) + 0.4 * time; float radius = length(pos.xy) * (0.7 + 0.3 * sin(time * 0.7)); pos.x = cos(angle) * radius; pos.y = sin(angle) * radius; pos.z *= 0.8 + 0.3 * cos(time * 0.5);'}
+                    // X pattern - diagonal motion with reduced amplitude
+                    'float xFactor = 0.35 + 0.15 * sin(time); pos.xy = mix(pos.xy, vec2(sign(pos.x) * 0.25 * cos(time * 0.3), sign(pos.y) * 0.25 * sin(time * 0.3)), xFactor); pos.z *= 0.7 + 0.2 * sin(time * 0.5);' : 
+                    // O pattern - spiral with reduced radius
+                    'float angle = atan(pos.y, pos.x) + 0.4 * time; float radius = length(pos.xy) * (0.5 + 0.2 * sin(time * 0.7)); pos.x = cos(angle) * radius; pos.y = sin(angle) * radius; pos.z *= 0.7 + 0.2 * cos(time * 0.5);'}
                 
-                // Soft clamp instead of hard constraint
+                // More aggressive constraint to keep particles tightly contained
                 float boxSize = 0.42; // Use same box size as other styles for consistency
                 if (abs(pos.x) > boxSize || abs(pos.y) > boxSize || abs(pos.z) > boxSize) {
-                    pos *= 0.95; // Soft scaling back instead of clamping
+                    // More aggressive scaling to pull particles in from the edges
+                    pos *= 0.85; 
                 }
                 
                 // Calculate tangent for special effects
@@ -116,10 +117,12 @@ export function createNebulaWhisperParticleSystem(type, position) {
                 // Enhanced visibility calculation
                 vVisibility = 1.0;
                 
-                // Dynamic point size
+                // Dynamic point size - further reduced for better consistency
                 float distanceToCamera = -mvPosition.z;
-                float sizeScale = 1.0 + 0.3 * sin(time * 2.0 + vDistFromCenter * 6.0); // Pulsing size
-                gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 25.0; // Reduce size multiplier from 60.0 to 25.0
+                // Smaller pulsing effect to prevent oversized particles
+                float sizeScale = 0.8 + 0.2 * sin(time * 2.0 + vDistFromCenter * 6.0);
+                // Further reduce the base multiplier from 25.0 to 18.0 for better miniboard compatibility
+                gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 18.0;
                 
                 gl_Position = projectionMatrix * mvPosition;
                 vUv = uv;
@@ -147,16 +150,16 @@ export function createNebulaWhisperParticleSystem(type, position) {
                 // More dramatic glow effect
                 float glow = 0.7 + 0.3 * sin(time * 4.0 + vDistFromCenter * 8.0);
                 
-                // Enhanced color with more variation
+                // Enhanced color with more variation - intensified to compensate for smaller particles
                 vec3 color = ${type === 'X' ? 
-                    'vec3(0.9 + 0.1 * sin(time + dist * 15.0), 0.1 + 0.3 * sin(time + vDistFromCenter * 12.0), 0.1 + 0.2 * cos(time * 1.5))' : 
-                    'vec3(0.1 + 0.2 * sin(time * 1.2), 0.3 + 0.3 * sin(time + vDistFromCenter * 6.0), 0.9 + 0.1 * cos(time + dist * 15.0))'};
+                    'vec3(1.0 + 0.0 * sin(time + dist * 15.0), 0.15 + 0.25 * sin(time + vDistFromCenter * 12.0), 0.15 + 0.15 * cos(time * 1.5))' : 
+                    'vec3(0.15 + 0.15 * sin(time * 1.2), 0.3 + 0.2 * sin(time + vDistFromCenter * 6.0), 1.0 + 0.0 * cos(time + dist * 15.0))'};
                 
-                // Add subtle color fringing based on distance from point center
-                color += vec3(0.1, 0.15, 0.2) * (1.0 - dist);
+                // Add subtle color fringing with increased intensity
+                color += vec3(0.15, 0.2, 0.25) * (1.0 - dist);
                 
-                // Apply more dramatic pulsing
-                color += vec3(0.2) * sin(time * 3.0 + vDistFromCenter * 10.0);
+                // Apply more dramatic pulsing with increased brightness
+                color += vec3(0.25) * sin(time * 3.0 + vDistFromCenter * 10.0);
                 
                 gl_FragColor = vec4(color * glow, alpha * 0.9 * vVisibility);
                 

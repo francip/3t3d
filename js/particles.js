@@ -90,11 +90,12 @@ export function configureParticleSystemForCell(particleSystem, targetCellSize, o
                 );
             }
             
-            // Nebula Whisper style
-            if (shader.vertexShader.includes('gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 60.0')) {
+            // Nebula Whisper style - we now use a lower base value (18.0) in the original shader
+            if (shader.vertexShader.includes('gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 18.0')) {
+                // For mini boards, we need to scale the point size consistently with other styles
                 shader.vertexShader = shader.vertexShader.replace(
-                    'gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 60.0',
-                    'gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 25.0' // Reduce from 60.0 to 25.0
+                    'gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 18.0',
+                    'gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 15.0' // Reduce further for mini board
                 );
             }
         };
