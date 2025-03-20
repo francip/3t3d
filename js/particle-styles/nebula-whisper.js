@@ -10,15 +10,15 @@ export function createNebulaWhisperParticleSystem(type, position) {
     const cellSize = 0.4; 
 
     for (let i = 0; i < particleCount; i++) {
-        // Create a more complex initial pattern for stylized systems
+        // Create a more compact initial pattern for better cell containment
         const angle = Math.random() * Math.PI * 2;
-        const radius = 0.1 + Math.random() * 0.3; // Min radius to ensure some spread
+        const radius = 0.05 + Math.random() * 0.2; // Reduced radius range (was 0.1 + random * 0.3)
         
         // Create different initial distributions for X and O
         if (type === 'X') {
-            // X gets a cross pattern
+            // X gets a tighter cross pattern
             const diagonal = Math.random() > 0.5;
-            const dist = Math.random() * 0.3;
+            const dist = Math.random() * 0.2; // Reduced from 0.3
             
             if (diagonal) {
                 initialPositions[i * 3] = dist * (Math.random() > 0.5 ? 1 : -1);
@@ -34,17 +34,17 @@ export function createNebulaWhisperParticleSystem(type, position) {
             initialPositions[i * 3 + 1] = Math.sin(angle) * radius;
         }
         
-        initialPositions[i * 3 + 2] = (Math.random() - 0.5) * 0.2;
+        initialPositions[i * 3 + 2] = (Math.random() - 0.5) * 0.15; // Reduced Z spread from 0.2 to 0.15
         
         // Copy to current positions
         positions[i * 3] = initialPositions[i * 3];
         positions[i * 3 + 1] = initialPositions[i * 3 + 1];
         positions[i * 3 + 2] = initialPositions[i * 3 + 2];
         
-        // Velocities with more variance for stylized mode
-        velocities[i * 3] = (Math.random() - 0.5) * 0.04;
-        velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.04;
-        velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.04;
+        // Velocities with less variance for tighter containment
+        velocities[i * 3] = (Math.random() - 0.5) * 0.02;  // Reduced from 0.04
+        velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.02;  // Reduced from 0.04
+        velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.02;  // Reduced from 0.04
         
         // Smaller sizes for better proportion
         sizes[i] = 1.0 + Math.random() * 2.0;
@@ -71,21 +71,21 @@ export function createNebulaWhisperParticleSystem(type, position) {
                 float localTime = time * 0.6; // Faster time scale for more dynamic movement
                 
                 // Each position component combines two trigonometric functions:
-                // 1. Primary sine wave with larger amplitude (0.15)
-                // 2. Secondary wave (cos or sin) with smaller amplitude (0.07)
-                // This creates complex non-repeating motion patterns
+                // 1. Primary sine wave with much smaller amplitude (0.08)
+                // 2. Secondary wave (cos or sin) with much smaller amplitude (0.04)
+                // This creates complex non-repeating motion patterns but with less spread
                 vec3 offset = vec3(
                     // X offset: sin wave (primary) + cos wave (secondary)
-                    sin(localTime * 1.2 + initialPosition.x * 12.0) * 0.15 +  // Primary wave
-                    cos(localTime * 0.7 + initialPosition.z * 5.0) * 0.07,    // Secondary wave
+                    sin(localTime * 1.2 + initialPosition.x * 12.0) * 0.08 +  // Primary wave - reduced from 0.15
+                    cos(localTime * 0.7 + initialPosition.z * 5.0) * 0.04,    // Secondary wave - reduced from 0.07
                     
                     // Y offset: sin wave (primary) + sin wave (secondary)
-                    sin(localTime * 1.7 + initialPosition.y * 14.0) * 0.15 +  // Primary wave
-                    sin(localTime * 0.9 + initialPosition.x * 7.0) * 0.07,    // Secondary wave
+                    sin(localTime * 1.7 + initialPosition.y * 14.0) * 0.08 +  // Primary wave - reduced from 0.15
+                    sin(localTime * 0.9 + initialPosition.x * 7.0) * 0.04,    // Secondary wave - reduced from 0.07
                     
                     // Z offset: sin wave (primary) + cos wave (secondary)
-                    sin(localTime * 2.3 + initialPosition.z * 16.0) * 0.15 +  // Primary wave
-                    cos(localTime * 1.3 + initialPosition.y * 9.0) * 0.07     // Secondary wave
+                    sin(localTime * 2.3 + initialPosition.z * 16.0) * 0.08 +  // Primary wave - reduced from 0.15
+                    cos(localTime * 1.3 + initialPosition.y * 9.0) * 0.04     // Secondary wave - reduced from 0.07
                 );
                 
                 // Calculate positions with more dynamic motion

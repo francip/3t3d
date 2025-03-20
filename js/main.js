@@ -143,6 +143,8 @@ function createStyleSelector() {
             
             // Update turn indicator with the new style
             if (turnIndicator) {
+                // Store current style selection to help with special configuration
+                window.__currentParticleStyle = styleName;
                 updateTurnIndicator();
             }
             
@@ -212,7 +214,12 @@ function initializeStylePreviews() {
         const particles = style.fn('X', new THREE.Vector3(0, 0, 0));
         
         // Configure particles to fit in the cell using our helper
-        configureParticleSystemForCell(particles, miniCellSize);
+        // Use a lower safety margin for Nebula Whisper style specifically
+        if (style.name === 'nebula-whisper') {
+            configureParticleSystemForCell(particles, miniCellSize, 0.9, 0.42, 0.4); // Lower safety margin
+        } else {
+            configureParticleSystemForCell(particles, miniCellSize);
+        }
         scene.add(particles);
         
         // Store components for animation
@@ -353,7 +360,15 @@ function updateTurnIndicator() {
     );
     
     // Configure particles to fit proportionally in the cell
-    configureParticleSystemForCell(turnIndicator.particles, 0.8);
+    // Check if current particles are Nebula Whisper style for special handling
+    const currentStyle = window.__currentParticleStyle || '';
+    const isNebulaWhisper = currentStyle === 'nebula-whisper';
+    
+    if (isNebulaWhisper) {
+        configureParticleSystemForCell(turnIndicator.particles, 0.8, 0.9, 0.42, 0.4); // Lower safety margin for nebula
+    } else {
+        configureParticleSystemForCell(turnIndicator.particles, 0.8);
+    }
     turnIndicator.scene.add(turnIndicator.particles);
     
     // Keep text styling consistent
@@ -403,6 +418,15 @@ function onClick(event) {
         if (game.getCell(x, y, z)) {
             // Add particles for the move
             const particles = createParticleSystem(game.getCell(x, y, z), cell.position);
+            
+            // Special handling for Nebula Whisper style on the main board
+            // Use a tighter constraint for better containment
+            const currentStyle = window.__currentParticleStyle || '';
+            if (currentStyle === 'nebula-whisper') {
+                // Use standard configuration with safety margin of 0.65 for the main board
+                configureParticleSystemForCell(particles, 0.9, 0.9, 0.42, 0.65);
+            }
+            
             scene.add(particles);
             activeParticles.push(particles);
             
