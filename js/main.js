@@ -216,135 +216,142 @@ const styleSelector = createStyleSelector();
 let turnIndicator;
 let turnIndicatorText;
 
+/**
+ * Creates a turn indicator showing the current player on a mini 3D board
+ * @returns {Object} Object containing the turn indicator components
+ */
 function createTurnIndicator() {
-    // Create container for the turn indicator
+    // ----- UI CONTAINER SETUP -----
+    // Create the main container
     const container = document.createElement('div');
     container.id = 'turn-indicator';
-    container.style.position = 'absolute';
-    container.style.top = '20px';
-    container.style.left = '50%';
-    container.style.transform = 'translateX(-50%)';
-    container.style.zIndex = '100';
-    container.style.display = 'flex';
-    container.style.flexDirection = 'row';
-    container.style.alignItems = 'center';
-    container.style.pointerEvents = 'none'; // Don't catch mouse events
-    container.style.backgroundColor = 'rgba(0,0,0,0.2)';
-    container.style.padding = '4px 8px';
-    container.style.borderRadius = '8px';
     
-    // Create text element
+    // Set container styling
+    Object.assign(container.style, {
+        position: 'absolute',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: '100',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        pointerEvents: 'none',
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        padding: '4px 8px',
+        borderRadius: '8px'
+    });
+    
+    // Create text label
     const textElement = document.createElement('div');
-    textElement.style.color = '#ffffff';
-    textElement.style.fontSize = '12px';
-    textElement.style.fontFamily = 'Arial, sans-serif';
-    textElement.style.marginRight = '8px';
-    textElement.style.textShadow = '0 0 3px rgba(0,0,0,0.5)';
-    textElement.style.letterSpacing = '1px';
+    Object.assign(textElement.style, {
+        color: '#ffffff',
+        fontSize: '12px',
+        fontFamily: 'Arial, sans-serif',
+        marginRight: '8px',
+        textShadow: '0 0 3px rgba(0,0,0,0.5)',
+        letterSpacing: '1px'
+    });
     textElement.textContent = 'NEXT';
     container.appendChild(textElement);
     
-    // Create canvas for the 3D turn indicator
-    const indicatorCanvas = document.createElement('canvas');
-    indicatorCanvas.width = 64; // Larger canvas for better visualization
-    indicatorCanvas.height = 64;
-    container.appendChild(indicatorCanvas);
-    
+    // Create canvas for 3D rendering
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    container.appendChild(canvas);
     document.body.appendChild(container);
     
-    // Setup mini renderer
-    const indicatorRenderer = new THREE.WebGLRenderer({
-        canvas: indicatorCanvas,
+    // ----- 3D SCENE SETUP -----
+    // Create renderer with transparency
+    const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
         alpha: true,
         antialias: true
     });
-    // Set the clear color to fully transparent black
-    indicatorRenderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x000000, 0);
     
-    // Setup mini scene with transparent background
-    const indicatorScene = new THREE.Scene();
-    indicatorScene.background = null; // Make scene background transparent
+    // Create scene with transparent background
+    const scene = new THREE.Scene();
+    scene.background = null;
     
-    // Create a camera that looks at the mini board from an angled perspective
-    // Use a narrower field of view to reduce distortion at the edges
-    const indicatorCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
-    // Position slightly further back to ensure full containment
-    indicatorCamera.position.set(1.7, 1.7, 1.7);
-    indicatorCamera.lookAt(0, 0, 0);
+    // Create camera with good viewing angle that matches the main board perspective
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 10);
+    // Position further back to see the whole cell more clearly
+    camera.position.set(2.0, 2.0, 2.0);
+    camera.lookAt(0, 0, 0);
     
-    // Add light to mini scene
-    const indicatorLight = new THREE.AmbientLight(0xffffff, 1);
-    indicatorScene.add(indicatorLight);
+    // Add lighting for depth and visibility
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
     
-    // Create a directional light for better depth perception
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1, 1, 1);
-    indicatorScene.add(directionalLight);
+    scene.add(directionalLight);
     
-    // Create a mini 1x1x1 board (cell)
-    // Use exact proportion ratios from main board
-    const miniCellSize = 0.7;
+    // ----- MINI BOARD & PARTICLES -----
+    // Create the mini board (1x1x1 cube)
+    // Use the same cell size proportion as the main board for consistency
+    const miniCellSize = 0.8;  // Slightly larger cell for better proportion
     const miniBoard = new Board(1, 1, 1, { 
-        cellSize: miniCellSize,  // Base cell size for scale calculations
+        cellSize: miniCellSize, 
         spacing: 1.0
     });
+    scene.add(miniBoard.getObject());
     
-    // Move the mini board to center
-    miniBoard.getObject().position.set(0, 0, 0);
-    indicatorScene.add(miniBoard.getObject());
+    // Create particle system for current player
+    const particles = createParticleSystem(game.currentPlayer, new THREE.Vector3(0, 0, 0));
     
-    // Create particle system for current player placed inside the cell
-    const particlePosition = new THREE.Vector3(0, 0, 0);
-    const particles = createParticleSystem(game.currentPlayer, particlePosition);
-    
-    // Configure the particle system to fit within the mini cell
+    // Configure particles to fit proportionally within the cell
     configureParticleSystemForCell(particles, miniCellSize);
+    scene.add(particles);
     
-    indicatorScene.add(particles);
-    
+    // Return all components for later reference and updates
     return {
         container,
         textElement,
-        scene: indicatorScene,
-        camera: indicatorCamera,
-        renderer: indicatorRenderer,
+        scene,
+        camera,
+        renderer,
         particles,
         miniBoard
     };
 }
 
+/**
+ * Updates the turn indicator to show the current player
+ */
 function updateTurnIndicator() {
+    // Create the indicator if it doesn't exist
     if (!turnIndicator) {
         turnIndicator = createTurnIndicator();
         turnIndicatorText = turnIndicator.textElement;
     }
     
-    // Remove old particles and add new ones for current player
+    // Update particles for current player
     turnIndicator.scene.remove(turnIndicator.particles);
-    turnIndicator.particles = createParticleSystem(game.currentPlayer, new THREE.Vector3(0, 0, 0));
+    turnIndicator.particles = createParticleSystem(
+        game.currentPlayer, 
+        new THREE.Vector3(0, 0, 0)
+    );
     
-    // Configure the particle system for the mini cell (using 0.7 as the mini cell size)
-    configureParticleSystemForCell(turnIndicator.particles, 0.7);
-    
+    // Configure particles to fit proportionally in the cell
+    configureParticleSystemForCell(turnIndicator.particles, 0.8);
     turnIndicator.scene.add(turnIndicator.particles);
     
-    // Keep text color white as requested
+    // Keep text styling consistent
     turnIndicatorText.style.color = '#ffffff';
     
-    // Animate the mini board to match the current player
+    // Update cell color based on current player
     const miniCell = turnIndicator.miniBoard.getCell(1, 1, 1);
     if (miniCell) {
-        // Add subtle glow to cell based on player
-        if (game.currentPlayer === 'X') {
-            // Red glow for X
-            miniCell.material.uniforms.playerColor = { value: new THREE.Vector3(1.0, 0.2, 0.2) };
-        } else {
-            // Blue glow for O
-            miniCell.material.uniforms.playerColor = { value: new THREE.Vector3(0.2, 0.2, 1.0) };
-        }
+        // Set cell glow color based on player
+        const colorVector = game.currentPlayer === 'X' 
+            ? new THREE.Vector3(1.0, 0.2, 0.2)  // Red for X
+            : new THREE.Vector3(0.2, 0.2, 1.0); // Blue for O
+            
+        miniCell.material.uniforms.playerColor = { value: colorVector };
     }
-    
-    // Leave the container styling to CSS
 }
 
 // Create initial turn indicator
@@ -423,29 +430,30 @@ function animate() {
     // Animate all active particles in the scene
     activeParticles.forEach(p => p.material.uniforms.time.value = time);
     
-    // Update turn indicator 
+    // Animate turn indicator with the current turn's particles
     if (turnIndicator && turnIndicator.renderer) {
-        // Update particle animations
-        if (turnIndicator.particles && turnIndicator.particles.material && turnIndicator.particles.material.uniforms) {
+        // Update particle animation time
+        if (turnIndicator.particles?.material?.uniforms) {
+            // Update time uniform for particle animation
             turnIndicator.particles.material.uniforms.time.value = time;
             
-            // Rotate the particles slightly for better visual effect
+            // Add subtle rotation to particles for visual interest
             turnIndicator.particles.rotation.y = time * 0.3;
             turnIndicator.particles.rotation.x = Math.sin(time * 0.2) * 0.2;
         }
         
-        // Update the mini board animations if it exists
+        // Animate the mini board
         if (turnIndicator.miniBoard) {
-            // Animate miniBoard cells
+            // Update shader time for all cells
             turnIndicator.miniBoard.animate(time);
             
-            // Add a small rotation to the mini board for visual interest
+            // Add gentle rocking motion to the board
             const boardObj = turnIndicator.miniBoard.getObject();
             boardObj.rotation.y = Math.sin(time * 0.2) * 0.2;
             boardObj.rotation.x = Math.sin(time * 0.15) * 0.1;
         }
         
-        // Render the turn indicator
+        // Render the updated turn indicator
         turnIndicator.renderer.render(turnIndicator.scene, turnIndicator.camera);
     }
     
@@ -495,10 +503,13 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     
-    // Also update turn indicator if it exists
-    if (turnIndicator && turnIndicator.renderer) {
+    // Update turn indicator renderer on window resize
+    if (turnIndicator?.renderer) {
+        // Maintain aspect ratio of 1:1 for the mini board view
         turnIndicator.camera.aspect = 1;
         turnIndicator.camera.updateProjectionMatrix();
+        
+        // Keep canvas size consistent
         turnIndicator.renderer.setSize(64, 64);
     }
 });
