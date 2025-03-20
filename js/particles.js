@@ -50,17 +50,51 @@ export function configureParticleSystemForCell(particleSystem, targetCellSize, o
             // Run original modifications if they exist
             if (originalOnBeforeCompile) originalOnBeforeCompile(shader);
             
-            // Replace the box size with our calculated value
-            shader.vertexShader = shader.vertexShader.replace(
-                'float boxSize = 0.42;',
-                `float boxSize = ${targetBoxSize.toFixed(3)};`
-            );
+            // Find and replace the box size with our calculated value
+            // Handle different box size values in different particle styles
+            let boxSizeReplaced = false;
             
-            // Also reduce the point size to make particles smaller
+            // Try the standard box size definition pattern
+            if (shader.vertexShader.includes('float boxSize = 0.42;')) {
+                shader.vertexShader = shader.vertexShader.replace(
+                    'float boxSize = 0.42;',
+                    `float boxSize = ${targetBoxSize.toFixed(3)};`
+                );
+                boxSizeReplaced = true;
+            }
+            
+            // Try alternate box size for nebula whisper
+            if (!boxSizeReplaced && shader.vertexShader.includes('float boxSize = 0.45;')) {
+                shader.vertexShader = shader.vertexShader.replace(
+                    'float boxSize = 0.45;',
+                    `float boxSize = ${targetBoxSize.toFixed(3)};`
+                );
+                boxSizeReplaced = true;
+            }
+            
+            // Adjust point sizes for different particle styles
+            
+            // Quantum Flux style
             if (shader.vertexShader.includes('gl_PointSize = size * (1.0 / distanceToCamera) * 60.0')) {
                 shader.vertexShader = shader.vertexShader.replace(
                     'gl_PointSize = size * (1.0 / distanceToCamera) * 60.0',
                     'gl_PointSize = size * (1.0 / distanceToCamera) * 30.0' // Reduce the base size multiplier
+                );
+            }
+            
+            // Ember Glow style - adjust fixed point size
+            if (shader.vertexShader.includes('gl_PointSize = mix(2.0, 4.0,')) {
+                shader.vertexShader = shader.vertexShader.replace(
+                    'gl_PointSize = mix(2.0, 4.0,',
+                    'gl_PointSize = mix(4.0, 8.0,' // Double the point sizes to make them more visible
+                );
+            }
+            
+            // Nebula Whisper style
+            if (shader.vertexShader.includes('gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 60.0')) {
+                shader.vertexShader = shader.vertexShader.replace(
+                    'gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 60.0',
+                    'gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 25.0' // Reduce from 60.0 to 25.0
                 );
             }
         };

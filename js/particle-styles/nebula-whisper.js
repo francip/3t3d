@@ -46,8 +46,8 @@ export function createNebulaWhisperParticleSystem(type, position) {
         velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.04;
         velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.04;
         
-        // Varied sizes with larger spread
-        sizes[i] = 1.5 + Math.random() * 4.0;
+        // Smaller sizes for better proportion
+        sizes[i] = 1.0 + Math.random() * 2.0;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -99,7 +99,7 @@ export function createNebulaWhisperParticleSystem(type, position) {
                     'float angle = atan(pos.y, pos.x) + 0.4 * time; float radius = length(pos.xy) * (0.7 + 0.3 * sin(time * 0.7)); pos.x = cos(angle) * radius; pos.y = sin(angle) * radius; pos.z *= 0.8 + 0.3 * cos(time * 0.5);'}
                 
                 // Soft clamp instead of hard constraint
-                float boxSize = 0.45;
+                float boxSize = 0.42; // Use same box size as other styles for consistency
                 if (abs(pos.x) > boxSize || abs(pos.y) > boxSize || abs(pos.z) > boxSize) {
                     pos *= 0.95; // Soft scaling back instead of clamping
                 }
@@ -119,7 +119,7 @@ export function createNebulaWhisperParticleSystem(type, position) {
                 // Dynamic point size
                 float distanceToCamera = -mvPosition.z;
                 float sizeScale = 1.0 + 0.3 * sin(time * 2.0 + vDistFromCenter * 6.0); // Pulsing size
-                gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 60.0;
+                gl_PointSize = size * sizeScale * (1.0 / distanceToCamera) * 25.0; // Reduce size multiplier from 60.0 to 25.0
                 
                 gl_Position = projectionMatrix * mvPosition;
                 vUv = uv;

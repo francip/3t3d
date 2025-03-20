@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export function createEmberGlowParticleSystem(type, position) {
-    const particleCount = 500;
+    const particleCount = 800; // More particles for better visibility
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const velocities = new Float32Array(particleCount * 3);
@@ -97,8 +97,8 @@ export function createEmberGlowParticleSystem(type, position) {
                 // Calculate distance from center for fragment shader
                 vDistFromCenter = length(pos) / boxSize;
                 
-                // Set point size based on z position for depth effect
-                gl_PointSize = mix(2.0, 4.0, 0.5 + 0.5 * pos.z / boxSize);
+                // Set point size based on z position for depth effect - larger point sizes for better visibility
+                gl_PointSize = mix(4.0, 8.0, 0.5 + 0.5 * pos.z / boxSize);
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
                 vUv = uv;
             }
