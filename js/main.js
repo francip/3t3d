@@ -77,19 +77,16 @@ function createStyleSelector() {
                 <div class="style-preview">
                     <canvas id="preview-ember-glow"></canvas>
                 </div>
-                <div class="style-name">Ember Glow</div>
             </div>
             <div class="style-option selected" data-style="quantum-flux">
                 <div class="style-preview">
                     <canvas id="preview-quantum-flux"></canvas>
                 </div>
-                <div class="style-name">Quantum Flux</div>
             </div>
             <div class="style-option" data-style="nebula-whisper">
                 <div class="style-preview">
                     <canvas id="preview-nebula-whisper"></canvas>
                 </div>
-                <div class="style-name">Nebula Whisper</div>
             </div>
         </div>
     `;
@@ -149,7 +146,9 @@ function createStyleSelector() {
 // Style preview renderers
 const previewRenderers = {};
 
-// Setup style previews with small rotating cubes and particle systems
+/**
+ * Setup style previews with mini boards, matching the turn indicator style
+ */
 function initializeStylePreviews() {
     const styles = [
         { name: 'ember-glow', fn: createEmberGlowParticleSystem },
@@ -164,47 +163,54 @@ function initializeStylePreviews() {
         // Skip if already initialized
         if (previewRenderers[style.name]) return;
         
-        // Create mini scene, camera, renderer
-        const previewScene = new THREE.Scene();
-        const previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 10);
-        previewCamera.position.set(1.5, 1.5, 1.5);
-        previewCamera.lookAt(0, 0, 0);
+        // Create mini scene with transparent background
+        const scene = new THREE.Scene();
+        scene.background = null;
         
-        const previewRenderer = new THREE.WebGLRenderer({
+        // Create camera with same perspective as turn indicator
+        const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 10);
+        camera.position.set(2.0, 2.0, 2.0);
+        camera.lookAt(0, 0, 0);
+        
+        // Create renderer with transparency
+        const renderer = new THREE.WebGLRenderer({
             canvas: canvas,
             alpha: true,
             antialias: true
         });
-        previewRenderer.setClearColor(0x111111, 0.1); // Dark gray transparent background
-        previewRenderer.setSize(70, 70);
+        renderer.setClearColor(0x000000, 0);
+        renderer.setSize(70, 70);
         
-        // Add light
-        const previewLight = new THREE.AmbientLight(0xffffff, 1);
-        previewScene.add(previewLight);
+        // Add lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
         
-        // Create a small cell - uniform across all previews
-        const cellGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-        const cellMaterial = new THREE.MeshBasicMaterial({
-            color: 0x666666,
-            transparent: true,
-            opacity: 0.3,
-            wireframe: true
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+        
+        // Create a mini board (1x1x1)
+        const miniCellSize = 0.8;
+        const miniBoard = new Board(1, 1, 1, { 
+            cellSize: miniCellSize, 
+            spacing: 1.0 
         });
-        const cell = new THREE.Mesh(cellGeometry, cellMaterial);
-        previewScene.add(cell);
+        scene.add(miniBoard.getObject());
         
-        // Add particles of both types
-        const xParticles = style.fn('X', new THREE.Vector3(0, 0, 0));
-        xParticles.scale.set(0.3, 0.3, 0.3);
-        previewScene.add(xParticles);
+        // Create example particles using this style
+        // Use 'X' for all previews for consistency
+        const particles = style.fn('X', new THREE.Vector3(0, 0, 0));
         
-        // Store the renderer and scene for animation
+        // Configure particles to fit in the cell using our helper
+        configureParticleSystemForCell(particles, miniCellSize);
+        scene.add(particles);
+        
+        // Store components for animation
         previewRenderers[style.name] = {
-            renderer: previewRenderer,
-            scene: previewScene,
-            camera: previewCamera,
-            cell: cell,
-            particles: xParticles
+            renderer,
+            scene,
+            camera,
+            miniBoard,
+            particles
         };
     });
 }
@@ -479,14 +485,25 @@ function animate() {
     // Animate style previews if they're visible
     if (document.getElementById('style-popup').classList.contains('visible')) {
         Object.values(previewRenderers).forEach(preview => {
-            if (preview.cell) {
-                preview.cell.rotation.x = time * 0.3;
-                preview.cell.rotation.y = time * 0.5;
+            // Update particle animation time
+            if (preview.particles?.material?.uniforms) {
+                // Update time uniform for particle animation
+                preview.particles.material.uniforms.time.value = time;
+                
+                // Add subtle rotation to particles for visual interest
+                preview.particles.rotation.y = time * 0.3;
+                preview.particles.rotation.x = Math.sin(time * 0.2) * 0.2;
             }
             
-            if (preview.particles && preview.particles.material && preview.particles.material.uniforms) {
-                preview.particles.material.uniforms.time.value = time;
-                preview.particles.rotation.y = time * 0.3;
+            // Animate the mini board
+            if (preview.miniBoard) {
+                // Update shader time for all cells
+                preview.miniBoard.animate(time);
+                
+                // Add gentle rocking motion to the board
+                const boardObj = preview.miniBoard.getObject();
+                boardObj.rotation.y = Math.sin(time * 0.2) * 0.2;
+                boardObj.rotation.x = Math.sin(time * 0.15) * 0.1;
             }
             
             preview.renderer.render(preview.scene, preview.camera);

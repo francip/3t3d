@@ -140,7 +140,6 @@ canvas {
     width: 70px;
     height: 70px;
     position: relative;
-    margin-bottom: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -154,8 +153,4 @@ canvas {
     background-color: rgba(17, 17, 17, 0.4);
 }
 
-.style-name {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 12px;
-    text-align: center;
-}
+/* Style names removed as requested */
