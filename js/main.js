@@ -71,22 +71,24 @@ function createStyleSelector() {
     
     // Popup content
     popup.innerHTML = `
-        <h3>PARTICLE STYLE</h3>
         <div class="style-options">
             <div class="style-option" data-style="ember-glow">
                 <div class="style-preview">
                     <canvas id="preview-ember-glow"></canvas>
                 </div>
+                <div class="style-label">Ember Glow</div>
             </div>
             <div class="style-option selected" data-style="quantum-flux">
                 <div class="style-preview">
                     <canvas id="preview-quantum-flux"></canvas>
                 </div>
+                <div class="style-label">Quantum Flux</div>
             </div>
             <div class="style-option" data-style="nebula-whisper">
                 <div class="style-preview">
                     <canvas id="preview-nebula-whisper"></canvas>
                 </div>
+                <div class="style-label">Nebula Whisper</div>
             </div>
         </div>
     `;
