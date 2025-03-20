@@ -33,5 +33,10 @@ export function createSimplifiedIndicatorParticles(type, position) {
     return particles;
 }
 
-// Current active particle style - change this to switch styles
-export const createParticleSystem = createQuantumFluxParticleSystem;
+// Define a global active particle system that can be changed at runtime
+window.__ActiveParticleSystem = createQuantumFluxParticleSystem;
+
+// Dynamically use the current active particle system
+export function createParticleSystem(type, position) {
+    return window.__ActiveParticleSystem(type, position);
+}

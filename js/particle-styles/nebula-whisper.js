@@ -67,12 +67,25 @@ export function createNebulaWhisperParticleSystem(type, position) {
             varying vec3 vTangent;
             
             void main() {
-                // More dynamic movement with composite sine waves
-                float localTime = time * 0.6; // Faster time scale for more movement
+                // Create complex motion using composite sine and cosine waves
+                float localTime = time * 0.6; // Faster time scale for more dynamic movement
+                
+                // Each position component combines two trigonometric functions:
+                // 1. Primary sine wave with larger amplitude (0.15)
+                // 2. Secondary wave (cos or sin) with smaller amplitude (0.07)
+                // This creates complex non-repeating motion patterns
                 vec3 offset = vec3(
-                    sin(localTime * 1.2 + initialPosition.x * 12.0) * 0.15 + cos(localTime * 0.7 + initialPosition.z * 5.0) * 0.07,
-                    sin(localTime * 1.7 + initialPosition.y * 14.0) * 0.15 + sin(localTime * 0.9 + initialPosition.x * 7.0) * 0.07,
-                    sin(localTime * 2.3 + initialPosition.z * 16.0) * 0.15 + cos(localTime * 1.3 + initialPosition.y * 9.0) * 0.07
+                    // X offset: sin wave (primary) + cos wave (secondary)
+                    sin(localTime * 1.2 + initialPosition.x * 12.0) * 0.15 +  // Primary wave
+                    cos(localTime * 0.7 + initialPosition.z * 5.0) * 0.07,    // Secondary wave
+                    
+                    // Y offset: sin wave (primary) + sin wave (secondary)
+                    sin(localTime * 1.7 + initialPosition.y * 14.0) * 0.15 +  // Primary wave
+                    sin(localTime * 0.9 + initialPosition.x * 7.0) * 0.07,    // Secondary wave
+                    
+                    // Z offset: sin wave (primary) + cos wave (secondary)
+                    sin(localTime * 2.3 + initialPosition.z * 16.0) * 0.15 +  // Primary wave
+                    cos(localTime * 1.3 + initialPosition.y * 9.0) * 0.07     // Secondary wave
                 );
                 
                 // Calculate positions with more dynamic motion

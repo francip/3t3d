@@ -84,16 +84,24 @@ export function createQuantumFluxParticleSystem(type, position) {
                 // Calculate distance from center for fragment shader
                 vDistFromCenter = length(pos) / boxSize;
                 
-                // Calculate position in view space (important for visibility calculation)
+                // Transform position to view space (camera-relative coordinates)
+                // modelViewMatrix combines model matrix (object position/rotation/scale)
+                // and view matrix (camera position/rotation)
                 vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
                 
                 // Calculate a visibility factor based on view position
-                // This helps prevent disappearing when viewed from certain angles
-                vec3 viewPos = mvPosition.xyz;
-                vVisibility = 1.0; // Base visibility
+                // This helps prevent particles from disappearing when viewed from certain angles
+                vec3 viewPos = mvPosition.xyz;  // Extract position in view space
+                vVisibility = 1.0;              // Set default visibility to fully visible
                 
-                // Apply point size based on custom size attribute and view distance
+                // Calculate dynamic point size based on distance from camera
+                // 1. Get distance from point to camera (-Z in view space)
                 float distanceToCamera = -mvPosition.z;
+                
+                // 2. Calculate point size that scales with distance:
+                //    - Multiply by custom size attribute to allow varied particle sizes
+                //    - Divide by distance to make distant particles smaller (perspective effect)
+                //    - Multiply by 60.0 scaling factor to control overall size
                 gl_PointSize = size * (1.0 / distanceToCamera) * 60.0;
                 
                 gl_Position = projectionMatrix * mvPosition;
