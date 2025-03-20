@@ -24,9 +24,11 @@ export function createCell(x, y, z) {
         vertexShader: cellVertexShader,
         fragmentShader: cellFragmentShader,
         uniforms: { time: { value: 0 } },
-        transparent: true
+        transparent: true,
+        depthWrite: true
     });
     const cell = new THREE.Mesh(geometry, material);
     cell.position.set(x - 1, y - 1, z - 1);
+    cell.renderOrder = 0; // Render cells before particles
     return cell;
 }

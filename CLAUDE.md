@@ -5,7 +5,7 @@
 - No build tools required - runs directly in browser
 
 ## Development Commands
-- Run locally: Open index.html in browser or use `python -m http.server`
+- Run locally: Use `npm run dev` to start the Vite development server
 - Debug: Open browser devtools (F12) for console logging/inspection
 - Test: Manual testing via browser interaction
 

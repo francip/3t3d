@@ -2,7 +2,27 @@ body {
     margin: 0;
     overflow: hidden;
     background: #1a1a1a;
+    font-family: 'Arial', sans-serif;
 }
+
 canvas {
     display: block;
+}
+
+#turn-indicator {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+#turn-indicator canvas {
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
 }
