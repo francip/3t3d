@@ -8,7 +8,8 @@ import {
     createEmberGlowParticleSystem,
     createQuantumFluxParticleSystem,
     createNebulaWhisperParticleSystem,
-    setActiveParticleSystem
+    setActiveParticleSystem,
+    configureParticleSystemForCell
 } from './particles.js';
 import { Board } from './board.js';
 
@@ -296,33 +297,8 @@ function createTurnIndicator() {
     const particlePosition = new THREE.Vector3(0, 0, 0);
     const particles = createParticleSystem(game.currentPlayer, particlePosition);
     
-    // Define constants for cell sizes and box sizes
-    const mainCellSize = 0.9; // From board.js default
-    const mainBoxSize = 0.42; // From particle shader default
-    
-    // Scale down the particles to fit in the mini cell
-    // Calculate scale based on the ratio of mini cell size to main cell size
-    const particleScale = miniCellSize / mainCellSize * 0.9; // Scale factor with a small safety margin
-    particles.scale.set(particleScale, particleScale, particleScale);
-    
-    // Calculate proper containment box size based on proportions from main board
-    // Formula: boxSize = (mainBoxSize / mainCellSize) * miniCellSize
-    const miniBoxSize = (mainBoxSize / mainCellSize) * miniCellSize;
-    
-    // Add containment to the particle shader with calculated proportional size
-    if (particles.material && particles.material.onBeforeCompile) {
-        const originalUpdate = particles.material.onBeforeCompile;
-        particles.material.onBeforeCompile = function(shader) {
-            // Run the original modifications
-            if (originalUpdate) originalUpdate(shader);
-            
-            // Use calculated box size based on proper proportions
-            shader.vertexShader = shader.vertexShader.replace(
-                'float boxSize = 0.42;',
-                `float boxSize = ${miniBoxSize.toFixed(3)};` // Proportionally scaled box size
-            );
-        };
-    }
+    // Configure the particle system to fit within the mini cell
+    configureParticleSystemForCell(particles, miniCellSize);
     
     indicatorScene.add(particles);
     
@@ -347,33 +323,8 @@ function updateTurnIndicator() {
     turnIndicator.scene.remove(turnIndicator.particles);
     turnIndicator.particles = createParticleSystem(game.currentPlayer, new THREE.Vector3(0, 0, 0));
     
-    // Define constants for cell sizes and box sizes
-    const mainCellSize = 0.9; // From board.js default
-    const mainBoxSize = 0.42; // From particle shader default
-    const miniCellSize = 0.7; // From our miniboard definition
-    
-    // Calculate scale based on the ratio of mini cell size to main cell size
-    const particleScale = miniCellSize / mainCellSize * 0.9; // Scale factor with safety margin
-    turnIndicator.particles.scale.set(particleScale, particleScale, particleScale);
-    
-    // Calculate proper containment box size based on proportions from main board
-    // Formula: boxSize = (mainBoxSize / mainCellSize) * miniCellSize
-    const miniBoxSize = (mainBoxSize / mainCellSize) * miniCellSize;
-    
-    // Add containment to the particle shader with calculated proportional size
-    if (turnIndicator.particles.material && turnIndicator.particles.material.onBeforeCompile) {
-        const originalUpdate = turnIndicator.particles.material.onBeforeCompile;
-        turnIndicator.particles.material.onBeforeCompile = function(shader) {
-            // Run the original modifications
-            if (originalUpdate) originalUpdate(shader);
-            
-            // Use calculated box size based on proper proportions
-            shader.vertexShader = shader.vertexShader.replace(
-                'float boxSize = 0.42;',
-                `float boxSize = ${miniBoxSize.toFixed(3)};` // Proportionally scaled box size
-            );
-        };
-    }
+    // Configure the particle system for the mini cell (using 0.7 as the mini cell size)
+    configureParticleSystemForCell(turnIndicator.particles, 0.7);
     
     turnIndicator.scene.add(turnIndicator.particles);
     

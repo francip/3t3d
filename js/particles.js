@@ -18,6 +18,46 @@ export function setActiveParticleSystem(styleName) {
     }
 }
 
+/**
+ * Configure a particle system to fit proportionally within a specified cell size
+ * @param {THREE.Points} particleSystem - The particle system to configure
+ * @param {number} targetCellSize - The cell size the particles should fit within
+ * @param {number} [originalCellSize=0.9] - The original/reference cell size
+ * @param {number} [originalBoxSize=0.42] - The original/reference particle containment box size
+ * @param {number} [safetyMargin=0.9] - Safety margin to ensure particles stay inside (0-1)
+ * @returns {THREE.Points} The configured particle system (same as input)
+ */
+export function configureParticleSystemForCell(particleSystem, targetCellSize, originalCellSize = 0.9, originalBoxSize = 0.42, safetyMargin = 0.9) {
+    if (!particleSystem || !particleSystem.material) return particleSystem;
+    
+    // Calculate the proportional scale for the particle system
+    const scaleFactor = (targetCellSize / originalCellSize) * safetyMargin;
+    
+    // Scale the particle system
+    particleSystem.scale.set(scaleFactor, scaleFactor, scaleFactor);
+    
+    // Calculate the box size proportionally
+    const targetBoxSize = (originalBoxSize / originalCellSize) * targetCellSize;
+    
+    // Modify the shader if possible
+    if (particleSystem.material.onBeforeCompile) {
+        const originalOnBeforeCompile = particleSystem.material.onBeforeCompile;
+        
+        particleSystem.material.onBeforeCompile = function(shader) {
+            // Run original modifications if they exist
+            if (originalOnBeforeCompile) originalOnBeforeCompile(shader);
+            
+            // Replace the box size with our calculated value
+            shader.vertexShader = shader.vertexShader.replace(
+                'float boxSize = 0.42;',
+                `float boxSize = ${targetBoxSize.toFixed(3)};`
+            );
+        };
+    }
+    
+    return particleSystem;
+}
+
 // Re-export for backward compatibility and new functionality
 export { 
     createParticleSystem,
