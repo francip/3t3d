@@ -245,8 +245,8 @@ function createTurnIndicator() {
     
     // Create canvas for the 3D turn indicator
     const indicatorCanvas = document.createElement('canvas');
-    indicatorCanvas.width = 32;
-    indicatorCanvas.height = 32;
+    indicatorCanvas.width = 64; // Larger canvas for better visualization
+    indicatorCanvas.height = 64;
     container.appendChild(indicatorCanvas);
     
     document.body.appendChild(container);
@@ -257,32 +257,73 @@ function createTurnIndicator() {
         alpha: true,
         antialias: true
     });
+    // Set the clear color to fully transparent black
     indicatorRenderer.setClearColor(0x000000, 0);
     
-    // Setup mini scene
+    // Setup mini scene with transparent background
     const indicatorScene = new THREE.Scene();
-    const indicatorCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 10);
-    indicatorCamera.position.z = 2;
+    indicatorScene.background = null; // Make scene background transparent
+    
+    // Create a camera that looks at the mini board from an angled perspective
+    // Use a narrower field of view to reduce distortion at the edges
+    const indicatorCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
+    // Position slightly further back to ensure full containment
+    indicatorCamera.position.set(1.7, 1.7, 1.7);
+    indicatorCamera.lookAt(0, 0, 0);
     
     // Add light to mini scene
     const indicatorLight = new THREE.AmbientLight(0xffffff, 1);
     indicatorScene.add(indicatorLight);
     
-    // Create a cube mesh for the indicator instead of a sphere
-    const cubeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-    const cubeMaterial = new THREE.MeshBasicMaterial({
-        color: 0x333333,
-        transparent: true,
-        opacity: 0.2,
-        wireframe: true
-    });
-    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    indicatorScene.add(cube);
+    // Create a directional light for better depth perception
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(1, 1, 1);
+    indicatorScene.add(directionalLight);
     
-    // Create simplified particle system for current player
+    // Create a mini 1x1x1 board (cell)
+    // Use exact proportion ratios from main board
+    const miniCellSize = 0.7;
+    const miniBoard = new Board(1, 1, 1, { 
+        cellSize: miniCellSize,  // Base cell size for scale calculations
+        spacing: 1.0
+    });
+    
+    // Move the mini board to center
+    miniBoard.getObject().position.set(0, 0, 0);
+    indicatorScene.add(miniBoard.getObject());
+    
+    // Create particle system for current player placed inside the cell
     const particlePosition = new THREE.Vector3(0, 0, 0);
-    const particles = createSimplifiedIndicatorParticles(game.currentPlayer, particlePosition);
-    particles.scale.set(0.15, 0.15, 0.15);
+    const particles = createParticleSystem(game.currentPlayer, particlePosition);
+    
+    // Define constants for cell sizes and box sizes
+    const mainCellSize = 0.9; // From board.js default
+    const mainBoxSize = 0.42; // From particle shader default
+    
+    // Scale down the particles to fit in the mini cell
+    // Calculate scale based on the ratio of mini cell size to main cell size
+    const particleScale = miniCellSize / mainCellSize * 0.9; // Scale factor with a small safety margin
+    particles.scale.set(particleScale, particleScale, particleScale);
+    
+    // Calculate proper containment box size based on proportions from main board
+    // Formula: boxSize = (mainBoxSize / mainCellSize) * miniCellSize
+    const miniBoxSize = (mainBoxSize / mainCellSize) * miniCellSize;
+    
+    // Add containment to the particle shader with calculated proportional size
+    if (particles.material && particles.material.onBeforeCompile) {
+        const originalUpdate = particles.material.onBeforeCompile;
+        particles.material.onBeforeCompile = function(shader) {
+            // Run the original modifications
+            if (originalUpdate) originalUpdate(shader);
+            
+            // Use calculated box size based on proper proportions
+            shader.vertexShader = shader.vertexShader.replace(
+                'float boxSize = 0.42;',
+                `float boxSize = ${miniBoxSize.toFixed(3)};` // Proportionally scaled box size
+            );
+        };
+    }
+    
     indicatorScene.add(particles);
     
     return {
@@ -291,7 +332,8 @@ function createTurnIndicator() {
         scene: indicatorScene,
         camera: indicatorCamera,
         renderer: indicatorRenderer,
-        particles
+        particles,
+        miniBoard
     };
 }
 
@@ -303,21 +345,55 @@ function updateTurnIndicator() {
     
     // Remove old particles and add new ones for current player
     turnIndicator.scene.remove(turnIndicator.particles);
-    turnIndicator.particles = createSimplifiedIndicatorParticles(game.currentPlayer, new THREE.Vector3(0, 0, 0));
-    turnIndicator.particles.scale.set(0.15, 0.15, 0.15);
+    turnIndicator.particles = createParticleSystem(game.currentPlayer, new THREE.Vector3(0, 0, 0));
+    
+    // Define constants for cell sizes and box sizes
+    const mainCellSize = 0.9; // From board.js default
+    const mainBoxSize = 0.42; // From particle shader default
+    const miniCellSize = 0.7; // From our miniboard definition
+    
+    // Calculate scale based on the ratio of mini cell size to main cell size
+    const particleScale = miniCellSize / mainCellSize * 0.9; // Scale factor with safety margin
+    turnIndicator.particles.scale.set(particleScale, particleScale, particleScale);
+    
+    // Calculate proper containment box size based on proportions from main board
+    // Formula: boxSize = (mainBoxSize / mainCellSize) * miniCellSize
+    const miniBoxSize = (mainBoxSize / mainCellSize) * miniCellSize;
+    
+    // Add containment to the particle shader with calculated proportional size
+    if (turnIndicator.particles.material && turnIndicator.particles.material.onBeforeCompile) {
+        const originalUpdate = turnIndicator.particles.material.onBeforeCompile;
+        turnIndicator.particles.material.onBeforeCompile = function(shader) {
+            // Run the original modifications
+            if (originalUpdate) originalUpdate(shader);
+            
+            // Use calculated box size based on proper proportions
+            shader.vertexShader = shader.vertexShader.replace(
+                'float boxSize = 0.42;',
+                `float boxSize = ${miniBoxSize.toFixed(3)};` // Proportionally scaled box size
+            );
+        };
+    }
+    
     turnIndicator.scene.add(turnIndicator.particles);
     
     // Keep text color white as requested
     turnIndicatorText.style.color = '#ffffff';
     
-    // Use a subtle indicator for current player
-    if (game.currentPlayer === 'X') {
-        turnIndicator.container.style.borderBottom = '1px solid #ff5555';
-        turnIndicator.container.style.boxShadow = '0 0 4px rgba(255, 255, 255, 0.3)';
-    } else {
-        turnIndicator.container.style.borderBottom = '1px solid #5555ff';
-        turnIndicator.container.style.boxShadow = '0 0 4px rgba(255, 255, 255, 0.3)';
+    // Animate the mini board to match the current player
+    const miniCell = turnIndicator.miniBoard.getCell(1, 1, 1);
+    if (miniCell) {
+        // Add subtle glow to cell based on player
+        if (game.currentPlayer === 'X') {
+            // Red glow for X
+            miniCell.material.uniforms.playerColor = { value: new THREE.Vector3(1.0, 0.2, 0.2) };
+        } else {
+            // Blue glow for O
+            miniCell.material.uniforms.playerColor = { value: new THREE.Vector3(0.2, 0.2, 1.0) };
+        }
     }
+    
+    // Leave the container styling to CSS
 }
 
 // Create initial turn indicator
@@ -396,13 +472,27 @@ function animate() {
     // Animate all active particles in the scene
     activeParticles.forEach(p => p.material.uniforms.time.value = time);
     
-    // Update turn indicator particles
-    if (turnIndicator && turnIndicator.particles && turnIndicator.renderer) {
-        turnIndicator.particles.material.uniforms.time.value = time;
+    // Update turn indicator 
+    if (turnIndicator && turnIndicator.renderer) {
+        // Update particle animations
+        if (turnIndicator.particles && turnIndicator.particles.material && turnIndicator.particles.material.uniforms) {
+            turnIndicator.particles.material.uniforms.time.value = time;
+            
+            // Rotate the particles slightly for better visual effect
+            turnIndicator.particles.rotation.y = time * 0.3;
+            turnIndicator.particles.rotation.x = Math.sin(time * 0.2) * 0.2;
+        }
         
-        // Rotate the indicator slightly for better visual effect
-        turnIndicator.particles.rotation.y = time * 0.3;
-        turnIndicator.particles.rotation.x = Math.sin(time * 0.2) * 0.2;
+        // Update the mini board animations if it exists
+        if (turnIndicator.miniBoard) {
+            // Animate miniBoard cells
+            turnIndicator.miniBoard.animate(time);
+            
+            // Add a small rotation to the mini board for visual interest
+            const boardObj = turnIndicator.miniBoard.getObject();
+            boardObj.rotation.y = Math.sin(time * 0.2) * 0.2;
+            boardObj.rotation.x = Math.sin(time * 0.15) * 0.1;
+        }
         
         // Render the turn indicator
         turnIndicator.renderer.render(turnIndicator.scene, turnIndicator.camera);
@@ -458,6 +548,6 @@ window.addEventListener('resize', () => {
     if (turnIndicator && turnIndicator.renderer) {
         turnIndicator.camera.aspect = 1;
         turnIndicator.camera.updateProjectionMatrix();
-        turnIndicator.renderer.setSize(32, 32);
+        turnIndicator.renderer.setSize(64, 64);
     }
 });
