@@ -1,7 +1,7 @@
 {
-  "name": "3t3d",
+  "name": "3t3d-react",
   "version": "1.0.0",
-  "description": "3D Tic-Tac-Toe game using Three.js",
+  "description": "3D Tic-Tac-Toe game using Three.js and React",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -13,9 +13,14 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "vite": "^6.2.2"
+    "@types/react": "^18.2.56",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.4"
   },
   "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "three": "^0.174.0"
   },
   "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
