@@ -6,17 +6,59 @@ import { createNebulaWhisperParticleSystem } from './nebula-whisper.js';
 // Re-export the imported styles
 export { createEmberGlowParticleSystem, createQuantumFluxParticleSystem, createNebulaWhisperParticleSystem };
 
+/**
+ * Default configurations for each player's particle appearance
+ * These get applied by the game logic, not within the particle systems themselves
+ */
+export const defaultPlayerStyles = {
+    X: {
+        // Red-themed with diagonal movement for X
+        color: { 
+            primary: [1.0, 0.3, 0.3], 
+            secondary: [1.0, 0.1, 0.1],
+            variation: 0.2
+        },
+        movementPattern: { 
+            type: 'diagonal', 
+            strength: 0.7 
+        },
+        geometry: {
+            distribution: 'cross'
+        }
+    },
+    O: {
+        // Blue-themed with orbital movement for O
+        color: { 
+            primary: [0.3, 0.4, 1.0], 
+            secondary: [0.1, 0.2, 1.0],
+            variation: 0.2 
+        },
+        movementPattern: { 
+            type: 'orbital', 
+            strength: 0.6
+        },
+        geometry: {
+            distribution: 'circular'
+        }
+    }
+};
+
 // Create a more simplified version of particles for the turn indicator
-// This works because the createXXParticleSystem functions accept type and position
-// So we can create a simplified version by wrapping one of the existing ones
-export function createSimplifiedIndicatorParticles(type, position) {
-    // Create particles using the quantum flux style but modify them
-    const particles = createQuantumFluxParticleSystem(type, position);
+export function createSimplifiedIndicatorParticles(player, position) {
+    // Get player-specific styling
+    const playerStyle = defaultPlayerStyles[player] || {};
     
-    // Make the particles a bit larger to be more visible in a small display
+    // Create particles using the quantum flux style with player styling
+    // This implementation needs to be updated to support the new API
+    const particles = createQuantumFluxParticleSystem(position, {
+        // Apply player-specific styling
+        color: playerStyle.color,
+        // Override with smaller size for indicator
+        particleSizeFactor: 0.8
+    });
+    
+    // Make the particles more densely packed for the small indicator
     if (particles.material && particles.material.uniforms) {
-        // We'll override some of the uniforms to make this effect more compact
-        // and better suited for the small indicator
         const originalUpdate = particles.material.onBeforeCompile;
         particles.material.onBeforeCompile = function(shader) {
             // Original modifications if any
@@ -36,7 +78,11 @@ export function createSimplifiedIndicatorParticles(type, position) {
 // Define a global active particle system that can be changed at runtime
 window.__ActiveParticleSystem = createQuantumFluxParticleSystem;
 
-// Dynamically use the current active particle system
-export function createParticleSystem(type, position) {
-    return window.__ActiveParticleSystem(type, position);
+// Dynamically use the current active particle system with player-specific styling
+export function createParticleSystem(player, position) {
+    // Get player-specific styling
+    const playerStyle = defaultPlayerStyles[player] || {};
+    
+    // Use the active particle system with player styling
+    return window.__ActiveParticleSystem(position, playerStyle);
 }
